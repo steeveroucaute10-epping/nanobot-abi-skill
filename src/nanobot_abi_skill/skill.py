@@ -33,7 +33,8 @@ class AutonomousBusinessIntelligenceSkill:
         :param topics: List of topics to validate
         :return: Validated list of topics
         """
-        if topics is None:
+        # If topics is None or an empty list, return default topics
+        if not topics:
             return [
                 "AI business transformation trends 2026",
                 "Enterprise AI strategy and implementation",
