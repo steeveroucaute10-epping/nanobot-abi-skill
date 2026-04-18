@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nanobot-abi-skill"
+version = "0.1.0"
+description = "Autonomous Business Intelligence Skill for Nanobot"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "typing-extensions",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools]
+packages = ["nanobot_abi_skill"]
