@@ -43,22 +43,23 @@ class TestTopicClusterer(unittest.TestCase):
         self.assertTrue(len(clusters) > 0)
         
         # Check specific clusters
-        healthcare_cluster = next(
-            (cluster for cluster in clusters if any('Healthcare' in insight['tags'] for insight in cluster['insights'])), 
-            None
-        )
-        blockchain_cluster = next(
-            (cluster for cluster in clusters if any('Blockchain' in insight['tags'] for insight in cluster['insights'])), 
-            None
-        )
+        def find_cluster_by_tag(tag):
+            for cluster in clusters:
+                if any(tag in insight['tags'] for insight in cluster['insights']):
+                    return cluster
+            return None
         
         # Validate Healthcare cluster
+        healthcare_cluster = find_cluster_by_tag('Healthcare')
         self.assertIsNotNone(healthcare_cluster)
-        self.assertTrue(any('Healthcare' in insight['tags'] for insight in healthcare_cluster['insights']))
+        self.assertEqual(len(healthcare_cluster['insights']), 2)
+        self.assertTrue(all('Healthcare' in insight['tags'] for insight in healthcare_cluster['insights']))
         
         # Validate Blockchain cluster
+        blockchain_cluster = find_cluster_by_tag('Blockchain')
         self.assertIsNotNone(blockchain_cluster)
-        self.assertTrue(any('Blockchain' in insight['tags'] for insight in blockchain_cluster['insights']))
+        self.assertEqual(len(blockchain_cluster['insights']), 2)
+        self.assertTrue(all('Blockchain' in insight['tags'] for insight in blockchain_cluster['insights']))
     
     def test_generate_cluster_summary(self):
         """
@@ -69,7 +70,7 @@ class TestTopicClusterer(unittest.TestCase):
         
         # Select a cluster for summary generation
         healthcare_cluster = next(
-            (cluster for cluster in clusters if any('Healthcare' in insight['tags'] for insight in cluster['insights'])), 
+            (cluster for cluster in clusters if 'Healthcare' in cluster['name']), 
             None
         )
         
@@ -78,8 +79,9 @@ class TestTopicClusterer(unittest.TestCase):
         
         # Validate summary
         self.assertIsNotNone(summary)
-        self.assertTrue(len(summary) > 10)  # Ensure some meaningful content
-        self.assertTrue('Healthcare' in summary or 'AI' in summary)
+        self.assertTrue(len(summary) > 50)  # Ensure meaningful summary
+        self.assertTrue('Healthcare' in summary)
+        self.assertTrue('AI' in summary)
     
     def test_similarity_scoring(self):
         """
