@@ -1,24 +1,63 @@
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
 class AutonomousBusinessIntelligenceSkill:
-    def __init__(self, 
-                 insights_dir: Optional[str] = None, 
-                 log_level: int = logging.INFO):
+    def __init__(
+        self, 
+        insights_dir: Optional[str] = None, 
+        log_dir: Optional[str] = None,
+        log_level: int = logging.INFO,
+        max_log_size_bytes: int = 1 * 1024 * 1024,  # 1 MB
+        backup_count: int = 5  # Number of backup log files to keep
+    ):
         """
         Initialize the Autonomous Business Intelligence Skill
         
         :param insights_dir: Directory to store generated insights
+        :param log_dir: Directory to store log files
         :param log_level: Logging level
+        :param max_log_size_bytes: Maximum size of log file before rotation
+        :param backup_count: Number of backup log files to keep
         """
-        # Configure logging
-        logging.basicConfig(
-            level=log_level,
-            format='%(asctime)s - %(levelname)s - %(message)s'
+        # Determine log directory
+        self.log_dir = log_dir or os.path.join(
+            os.path.dirname(__file__), '..', 'logs'
         )
+        os.makedirs(self.log_dir, exist_ok=True)
+        
+        # Configure logging with log rotation
+        log_file_path = os.path.join(self.log_dir, 'abi_skill.log')
+        
+        # Create a rotating file handler
+        file_handler = RotatingFileHandler(
+            log_file_path, 
+            maxBytes=max_log_size_bytes,  # 1 MB per log file
+            backupCount=backup_count  # Keep 5 backup files
+        )
+        
+        # Create console handler
+        console_handler = logging.StreamHandler()
+        
+        # Set log formatting
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        file_handler.setFormatter(formatter)
+        console_handler.setFormatter(formatter)
+        
+        # Configure logger
         self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(log_level)
+        
+        # Clear any existing handlers to prevent duplicate logging
+        self.logger.handlers.clear()
+        
+        # Add handlers
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(console_handler)
         
         # Configure insights directory
         self.insights_dir = insights_dir or os.path.join(
@@ -60,6 +99,9 @@ class AutonomousBusinessIntelligenceSkill:
         :param message_fn: Optional message function (for dependency injection)
         :return: List of generated insight file paths
         """
+        # Log the start of insight generation
+        self.logger.info("Starting insight generation process")
+        
         # Validate and prepare topics
         validated_topics = self._validate_topics(topics)
         
@@ -131,6 +173,9 @@ class AutonomousBusinessIntelligenceSkill:
                 self.logger.info(f"Delivered {len(generated_insights)} insight reports")
             except Exception as delivery_error:
                 self.logger.error(f"Failed to deliver insights: {delivery_error}")
+        
+        # Log the completion of insight generation
+        self.logger.info("Insight generation process completed")
         
         return generated_insights
 

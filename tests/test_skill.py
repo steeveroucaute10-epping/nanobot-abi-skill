@@ -1,19 +1,24 @@
 import os
 import unittest
 import tempfile
+import logging
 from typing import List, Dict
 
 from nanobot_abi_skill.skill import AutonomousBusinessIntelligenceSkill
 
 class TestAutonomousBusinessIntelligenceSkill(unittest.TestCase):
     def setUp(self):
-        # Create a temporary directory for insights
+        # Create temporary directories for insights and logs
         self.test_insights_dir = tempfile.mkdtemp()
+        self.test_log_dir = tempfile.mkdtemp()
         
-        # Initialize skill with test insights directory
+        # Initialize skill with test directories
         self.skill = AutonomousBusinessIntelligenceSkill(
             insights_dir=self.test_insights_dir,
-            log_level=None  # Disable logging for cleaner test output
+            log_dir=self.test_log_dir,
+            log_level=logging.DEBUG,
+            max_log_size_bytes=100 * 1024,  # 100 KB for testing
+            backup_count=3
         )
     
     def mock_web_search(self, query: str, count: int = 3) -> List[Dict[str, str]]:
@@ -61,6 +66,24 @@ class TestAutonomousBusinessIntelligenceSkill(unittest.TestCase):
             with open(insight_path, 'r') as f:
                 content = f.read()
                 self.assertTrue(len(content) > 100)  # Ensure meaningful content
+    
+    def test_log_file_creation(self):
+        """
+        Test that log files are created
+        """
+        # Generate insights to trigger logging
+        self.skill.generate_insights(
+            web_search_fn=self.mock_web_search,
+            message_fn=self.mock_message
+        )
+        
+        # Check log file creation
+        log_files = os.listdir(self.test_log_dir)
+        self.assertTrue(len(log_files) > 0, "No log files were created")
+        
+        # Verify log file names
+        log_files = [f for f in log_files if f.startswith('abi_skill.log')]
+        self.assertTrue(len(log_files) > 0, "No log files with expected prefix found")
     
     def test_generate_insights_custom_topics(self):
         """
